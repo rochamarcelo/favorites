@@ -31,13 +31,14 @@ class InitializeFavoriteSchema extends AbstractMigration
                 'null' => false,
             ])
             ->addColumn('type', 'string', [
+                'default' => null,
+                'limit' => 32,
+                'null' => false,
+            ])
+            ->addColumn('position', 'integer', [
                 'default' => 0,
                 'limit' => 3,
                 'null' => true,
-            ])
-            ->addColumn('position', 'integer', [
-                'default' => null,
-                'null' => false,
             ])
             ->addColumn('created', 'datetime', [
                 'default' => null,

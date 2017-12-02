@@ -23,5 +23,12 @@ class FavoriteArticlesTable extends Table
         parent::initialize($config);
 
         $this->setTable('articles');
+        $this->setPrimaryKey('id');
+        $this->belongsTo('FavoriteUsers', [
+            'foreignKey' => 'author_id',
+            'className' => FavoriteUsersTable::class
+        ]);
+        
+        $this->addBehavior('CakeDC/Favorites.Favorite');
     }
 }

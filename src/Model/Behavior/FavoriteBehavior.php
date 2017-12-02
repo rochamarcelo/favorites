@@ -1,186 +1,182 @@
 <?php
 /**
- * Copyright 2009-2010, Cake Development Corporation (http://cakedc.com)
+ * Copyright 2009-2017, Cake Development Corporation (http://cakedc.com)
  *
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright Copyright 2009-2010, Cake Development Corporation (http://cakedc.com)
+ * @copyright Copyright 2009-2017, Cake Development Corporation (http://cakedc.com)
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
- */namespace CakeDC\Favorites\Model\Behavior;
+ */
+namespace CakeDC\Favorites\Model\Behavior;
 
 use Cake\Core\Configure;
-use Cake\Model\Behavior;
-use Cake\Model\Model;
-
-
+use Cake\ORM\Behavior;
+use Cake\ORM\Table;
+use Cake\ORM\TableRegistry;
+use Exception;
 
 /**
  * Favorite behavior
- *
- * @package favorites
- * @subpackage favorites.models.behaviors
  */
-class FavoriteBehavior extends ModelBehavior {
+class FavoriteBehavior extends Behavior
+{
+    public $favoriteTypes = [];
 
-/**
- * Settings array
- *
- * @var array
- */
-	public $settings = array();
-
-/**
- * Allowed Types of things to be favorited
- * Maps types to models so you don't have to expose model names if you don't want to.
- * 
- *
- * @var array Types with the following format:
- * <code>
- * 	array(
- * 		'type1' => array('limit' => null, 'model' => 'Model'),
- * 		'type2' => array('limit' => 10, 'model' => 'OtherModel'));
- * </code>
- */
-	public $favoriteTypes = array();
-
-/**
- * Default settings
- *
- * favoriteClass			- class name of the table storing the favorites
- * field					- the fieldname that contains the raw tags as string
- * foreignKey				- foreignKey used in the hasMany association
- * counterCache				- name of the field to hold the counterCache
- *
- * @var array
- */
-	protected $_defaults = array(
-		'favoriteClass' => 'Favorites.Favorite',
-		'favoriteAlias' => 'Favorite',
+    /**
+     * Default configuration.
+     *
+     * @var array
+     */
+    protected $_defaultConfig = [
+        'favoriteClass' => 'CakeDC/Favorites.Favorites',
+		'favoriteAlias' => 'Favorites',
 		'foreignKey' => 'foreign_key',
 		'counterCache' => 'favorite_count',
-	);
-
-/**
- * Setup the behavior
- *
- * @param Model $Model
- * @param array $settings
- * @return void
- */
-	public function setup(Model $Model, $settings = array()) {
-		if (!isset($this->settings[$Model->alias])) {
-			$this->settings[$Model->alias] = $this->_defaults;
-		}
-		$this->settings[$Model->alias] = am($this->settings[$Model->alias], is_array($settings) ? $settings : array());
-		$favoriteClass = $this->settings[$Model->alias]['favoriteClass'];
-		$favoriteAlias = $this->settings[$Model->alias]['favoriteAlias'];
-
-		$Model->bindModel(array('hasMany' => array(
-			'Favorite' => array(
-				'className' => $favoriteClass,
-				'foreignKey' => $this->settings[$Model->alias]['foreignKey'],
-				'conditions' => array($favoriteAlias . '.model' => $Model->name),
-				'fields' => '',
-				'dependent' => true,
-		))), false);
-
-		$Model->{$favoriteAlias}->bindModel(array('belongsTo' => array(
-			$Model->alias => array(
-				'className' => $Model->name,
-				'foreignKey' => $this->settings[$Model->alias]['foreignKey'],
-				'fields' => '',
-				'counterCache' => $this->settings[$Model->alias]['counterCache']
-			),
-		)), false);
-		
-		$types = Configure::read('Favorites.types');
-		$this->favoriteTypes = array();
-		if (!empty($types)) {
-			foreach ((array) $types as $key => $type) {
-				$this->favoriteTypes[$key] = is_array($type) ? $type : array('model' => $type);
-				if (empty($this->favoriteTypes[$key]['limit'])) {
-					$this->favoriteTypes[$key]['limit'] = null;
-				}
+    ];
+    
+    /**
+     * Init the base property favoriteTypes with config data.
+     * 
+     * @return void
+     */
+    protected function _initFavoriteTypes()
+    {
+        $types = (array)Configure::read('Favorites.types');
+		$this->favoriteTypes = [];
+		foreach ($types as $key => $type) {
+			$this->favoriteTypes[$key] = is_array($type) ? $type : array('model' => $type);
+			if (empty($this->favoriteTypes[$key]['limit'])) {
+				$this->favoriteTypes[$key]['limit'] = null;
 			}
 		}
-	}
+    }
 
-/**
- * Save a favorite for a user - Checks for existing identical favorite first
- *
- * @throws Exception When it is impossible to save the favorite
- * @param mixed $userId Id of the user.
- * @param string $modelName Name of model
- * @param string $type favorite type
- * @param mixed $foreignKey foreignKey
- * @return boolean success of save Returns true if the favorite record already exists.
- */
-	public function saveFavorite(Model $Model, $userId, $modelName, $type, $foreignKey) {
-		if (method_exists($Model, 'beforeSaveFavorite')) {
-			$result = $Model->beforeSaveFavorite(array('id' => $foreignKey, 'userId' => $userId, 'model' => $modelName, 'type' => $type));
+    /**
+     * Constructor hook method.
+     *
+     * Implement this method to avoid having to overwrite
+     * the constructor and call parent.
+     *
+     * @param array $config The configuration settings provided to this behavior.
+     * @return void
+     */
+    public function initialize(array $config)
+    {
+        parent::initialize($config);
+
+        $favoriteClass = $this->getConfig('favoriteClass');
+		$favoriteAlias = $this->getConfig('favoriteAlias');
+		$alias = $this->getTable()->getAlias();
+		
+		$this->getTable()->hasMany('Favorites', [
+		    'className' => $favoriteClass,
+			'foreignKey' => $this->getConfig('foreignKey'),
+			'conditions' => [$favoriteAlias . '.model' => $alias],
+			'fields' => '',
+			'dependent' => true,
+	    ])->belongsTo($alias, [
+        	'foreignKey' => $this->getConfig('foreignKey'),
+	    ]);
+
+	    if (!$this->getTable()->behaviors()->has('CounterCache')) {
+	        $this->getTable()->addBehavior('CounterCache');
+	    }
+
+	    $this->getTable()->behaviors()->get('CounterCache')->setConfig(
+	        $favoriteAlias,
+	        $this->getConfig('counterCache')
+	    );
+	    
+        $this->_initFavoriteTypes();
+    }
+    
+    /**
+     * Save a favorite for a user - Checks for existing identical favorite first
+     *
+     * @param mixed $userId Id of the user.
+     * @param string $modelName Name of model
+     * @param string $type favorite type
+     * @param mixed $foreignKey foreignKey
+     * @throws Exception When it is impossible to save the favorite
+     * @return boolean success of save Returns true if the favorite record already exists.
+     */
+	public function saveFavorite($userId, $modelName, $type, $foreignKey) 
+	{
+	    $table = $this->getTable();
+	    $entity = $table->Favorites->newEntity([
+            'user_id' => $userId,
+		    'model' => $modelName,
+		    'type' => $type,
+		    'foreign_key' => $foreignKey,
+		    'position' => 1
+        ]);
+		if (method_exists($table, 'beforeSaveFavorite')) {
+			$result = $table->beforeSaveFavorite($entity);
 			if (!$result) {
 				throw new Exception(__d('favorites', 'Operation is not allowed'));
 			}
 		}
-	
-		$existing = $Model->Favorite->find('count', array(
-			'conditions' => array(
-				'Favorite.user_id' => $userId,
-				'Favorite.model' => $modelName,
-				'Favorite.type' => $type,
-				'Favorite.foreign_key' => $foreignKey)));
-		if ($existing > 0) {
+		$data = [
+            'user_id' => $userId,
+		    'model' => $modelName,
+		    'type' => $type,
+		    'foreign_key' => $foreignKey
+        ];
+
+		if ($table->Favorites->exists($data)) {
 			throw new Exception(__d('favorites', 'Already added.'));
 		}
 
 		if (array_key_exists($type, $this->favoriteTypes) && !is_null($this->favoriteTypes[$type]['limit'])) {
-			$currentCount = $Model->Favorite->find('count', array(
-				'conditions' => array(
-					'Favorite.user_id' => $userId,
-					'Favorite.type' => $type)));
+			$currentCount = $table->Favorites->find()->where([
+				$table->Favorites->aliasField('user_id') => $userId,
+				$table->Favorites->aliasField('type') => $type
+			])->count();
 			if ($currentCount >= $this->favoriteTypes[$type]['limit']) {
-				throw new Exception(sprintf(
-					__d('favorites', 'You cannot add more than %s items to this list'),
-					$this->favoriteTypes[$type]['limit']));
+				throw new Exception(
+				    sprintf(
+					    __d('favorites', 'You cannot add more than %s items to this list'),
+					    $this->favoriteTypes[$type]['limit']
+				    )
+			    );
 			}
 		}
 
-		$data = array(
-			'user_id' => $userId,
-			'model' => $modelName,
-			'foreign_key' => $foreignKey,
-			'type' => $type,
-			'position' => $this->_getNextPosition($Model, $userId, $modelName, $type));
-		$Model->Favorite->create($data);
-		$result = $Model->Favorite->save();
-		if ($result && method_exists($Model, 'afterSaveFavorite')) {
-			$result = $Model->afterSaveFavorite(array('id' => $foreignKey, 'userId' => $userId, 'model' => $modelName, 'type' => $type, 'data' => $result));
+        $entity = $table->Favorites->newEntity($data);
+        $entity->position = $this->_getNextPosition($entity);
+
+		$result = $table->Favorites->save($entity);
+		
+		if ($result && method_exists($table, 'afterSaveFavorite')) {
+			$result = $table->afterSaveFavorite($result);
 		}
 
 		return $result;
 	}
-
-/**
- * Get the next value for the order field based on the user and model
- *
- * @param AppModel $Model
- * @param mixed $userId
- * @param string $modelName
- * @param string $type favorite type
- * @return int
- */
-	protected function _getNextPosition(Model $Model, $userId, $modelName, $type) {
+	
+	/**
+     * Get the next value for the order field based on the user and model
+     *
+     * @param \Cake\Datasource\EntityInterface $entity
+     * @return int
+     */
+	protected function _getNextPosition(\Cake\Datasource\EntityInterface $entity) {
 		$position = 0;
-		$max = $Model->Favorite->find('first', array(
-			'fields' => array('MAX(Favorite.position) AS max_position'),
-			'conditions' => array(
-				'Favorite.user_id' => $userId,
-				'Favorite.model' => $modelName,
-				'Favorite.type' => $type)));
-		if (isset($max[0]['max_position'])) {
-			$position = $max[0]['max_position'] + 1;
-		}
+		$table = $this->getTable();
+		
+		$maxPosition = $table->Favorites->find()->where([
+		    $table->Favorites->aliasField('user_id') => $entity->user_id,
+		    $table->Favorites->aliasField('model') => $entity->model,
+			$table->Favorites->aliasField('type') => $entity->type
+		])->order([
+		    $table->Favorites->aliasField('position') => 'DESC'
+	    ])->first();
+
+	    if (isset($maxPosition['position'])) {
+	        $position = $maxPosition['position'] + 1;
+	    }
+
 		return $position;
 	}
 }

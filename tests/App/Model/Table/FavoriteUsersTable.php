@@ -22,6 +22,6 @@ class FavoriteUsersTable extends Table
     {
         parent::initialize($config);
 
-        $this->setTable('users');
+        $this->setTable('authors');
     }
 }

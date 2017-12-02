@@ -21,8 +21,8 @@ class FavoritesFixture extends TestFixture
         'user_id' => ['type' => 'string', 'length' => 36, 'null' => false, 'default' => null, 'collate' => 'utf8_general_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
         'foreign_key' => ['type' => 'string', 'length' => 36, 'null' => false, 'default' => null, 'collate' => 'utf8_general_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
         'model' => ['type' => 'string', 'length' => 64, 'null' => false, 'default' => null, 'collate' => 'utf8_general_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
-        'type' => ['type' => 'string', 'length' => 3, 'null' => true, 'default' => '0', 'collate' => 'utf8_general_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
-        'position' => ['type' => 'integer', 'length' => 11, 'unsigned' => false, 'null' => false, 'default' => null, 'comment' => '', 'precision' => null, 'autoIncrement' => null],
+        'type' => ['type' => 'string', 'length' => 32, 'null' => false, 'default' => null, 'collate' => 'utf8_general_ci', 'comment' => '', 'precision' => null, 'fixed' => null],
+        'position' => ['type' => 'integer', 'length' => 3, 'unsigned' => false, 'null' => true, 'default' => '0', 'comment' => '', 'precision' => null, 'autoIncrement' => null],
         'created' => ['type' => 'datetime', 'length' => null, 'null' => false, 'default' => null, 'comment' => '', 'precision' => null],
         'modified' => ['type' => 'datetime', 'length' => null, 'null' => false, 'default' => null, 'comment' => '', 'precision' => null],
         '_constraints' => [
@@ -43,14 +43,14 @@ class FavoritesFixture extends TestFixture
      */
     public $records = [
         [
-            'id' => '524b7b18-d87a-4569-beff-e521b1a018dc',
+            'id' => 'a62e34eb-084b-4ff8-b8b9-754c581ecab2',
             'user_id' => 'Lorem ipsum dolor sit amet',
             'foreign_key' => 'Lorem ipsum dolor sit amet',
             'model' => 'Lorem ipsum dolor sit amet',
-            'type' => 'L',
+            'type' => 'Lorem ipsum dolor sit amet',
             'position' => 1,
-            'created' => '2017-12-02 12:02:08',
-            'modified' => '2017-12-02 12:02:08'
+            'created' => '2017-12-02 20:15:03',
+            'modified' => '2017-12-02 20:15:03'
         ],
     ];
 }
