@@ -63,7 +63,7 @@ class FavoritesController extends AppController
 				}
 			}
 		}
-		$this->set('authMessage', __d('favorites', 'Authentification required'));
+
 		$config = TableRegistry::exists('FavoriteArticles') ? [] : ['className' => FavoriteArticlesTable::class];
         TableRegistry::get('FavoriteArticles', $config);
         
@@ -114,7 +114,7 @@ class FavoritesController extends AppController
 	 * Delete a favorite by Id
 	 *
 	 * @param mixed $id Id of favorite to delete.
-	 * @return void
+	 * @return \Cake\Http\Response
 	 */
 	public function delete($id = null) 
 	{
@@ -142,7 +142,7 @@ class FavoritesController extends AppController
 	public function short_list($type = null) {
 		$type = Inflector::underscore($type);
 		if (!isset($this->favoriteTypes[$type])) {
-			$this->Session->setFlash(__d('favorites', 'Invalid object type.'));
+			$this->Flash->error(__d('favorites', 'Invalid object type.'));
 			return;
 		}
 		$userId = $this->Auth->user('id');
@@ -169,21 +169,22 @@ class FavoritesController extends AppController
 		$this->render('list');
 	}
 
-/**
- * Move a favorite up or down a position.
- *
- * @param mixed $id Id of favorite to move.
- * @param string $direction direction to move (only up and down are accepted)
- * @return void
- */
-	public function move($id = null, $direction = 'up') {
+	/**
+	 * Move a favorite up or down a position.
+	 *
+	 * @param mixed $id Id of favorite to move.
+	 * @param string $direction direction to move (only up and down are accepted)
+	 * @return \Cake\Http\Response|null
+	 */
+	public function move($id = null, $direction = 'up') 
+	{
 		$status = 'error';
 		$direction = strtolower($direction);
 		if (($message = $this->_isOwner($id)) !== true) {
 			// Message defined
 		} elseif ($direction !== 'up' && $direction !== 'down') {
 			$message = __d('favorites', 'Invalid direction');
-		} elseif ($this->Favorite->move($id, $direction)) {
+		} elseif ($this->Favorites->move($id, $direction)) {
 			$status = 'success';
 			$message = __d('favorites', 'Favorite positions updated.');
 		} else {

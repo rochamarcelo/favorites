@@ -312,7 +312,49 @@ class FavoritesControllerTest extends IntegrationTestCase
      */
     public function testMove()
     {
-        $this->markTestIncomplete('Not implemented yet.');
+        $this->disableErrorHandlerMiddleware();
+        $this->configRequest([
+            'headers' => [
+                'REFERER' => '/articles/index',
+            ]
+        ]);
+        $this->session([
+            'Auth' => [
+                'User' => [
+                    'id' => 2,
+                    'username' => 'testing',
+                ]
+            ]
+        ]);
+        $this->get('/favorites/favorites/move/a63e34eb-084b-4ff8-b8b9-754c581ecab2/up');
+        $this->assertSession('Favorite positions updated.', 'Flash.flash.0.message');
+        $this->assertRedirect('/articles/index');
+    }
+    
+    /**
+     * Test move method with a wrong direction
+     *
+     * @return void
+     */
+    public function testMoveWrongDirection()
+    {
+        $this->disableErrorHandlerMiddleware();
+        $this->configRequest([
+            'headers' => [
+                'REFERER' => '/articles/index',
+            ]
+        ]);
+        $this->session([
+            'Auth' => [
+                'User' => [
+                    'id' => 2,
+                    'username' => 'testing',
+                ]
+            ]
+        ]);
+        $this->get('/favorites/favorites/move/a63e34eb-084b-4ff8-b8b9-754c581ecab2/space');
+        $this->assertSession('Invalid direction', 'Flash.flash.0.message');
+        $this->assertRedirect('/articles/index');
     }
 
     /**

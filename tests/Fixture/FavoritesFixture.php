@@ -48,9 +48,19 @@ class FavoritesFixture extends TestFixture
             'foreign_key' => '1',
             'model' => 'FavoriteArticles',
             'type' => 'like',
-            'position' => 1,
+            'position' => 2,
             'created' => '2017-12-02 20:15:03',
             'modified' => '2017-12-02 20:15:03'
+        ],
+        [
+            'id' => 'a63e34eb-084b-4ff8-b8b9-754c581ecab2',
+            'user_id' => '2',
+            'foreign_key' => '3',
+            'model' => 'FavoriteArticles',
+            'type' => 'like',
+            'position' => 1,
+            'created' => '2017-12-02 20:17:03',
+            'modified' => '2017-12-02 20:17:03'
         ],
     ];
 }
