@@ -203,8 +203,7 @@ class FavoritesControllerTest extends IntegrationTestCase
         $this->assertEquals($expected, $actual);
     }
     
-
-
+    
     /**
      * Test delete method
      *
@@ -212,7 +211,78 @@ class FavoritesControllerTest extends IntegrationTestCase
      */
     public function testDelete()
     {
-        $this->markTestIncomplete('Not implemented yet.');
+        $this->disableErrorHandlerMiddleware();
+        $this->configRequest([
+            'headers' => [
+                'REFERER' => '/articles/index',
+            ]
+        ]);
+        $this->session([
+            'Auth' => [
+                'User' => [
+                    'id' => 2,
+                    'username' => 'testing',
+                ]
+            ]
+        ]);
+        $this->enableRetainFlashMessages();
+        $this->get('/favorites/favorites/delete/a62e34eb-084b-4ff8-b8b9-754c581ecab2');
+        $this->assertRedirect('/articles/index');
+        $this->assertSession('Record removed from list', 'Flash.flash.0.message');
+    }
+    
+    /**
+     * Test delete method, record does not exists
+     *
+     * @return void
+     */
+    public function testDeleteNotExists()
+    {
+        $this->disableErrorHandlerMiddleware();
+        $this->configRequest([
+            'headers' => [
+                'REFERER' => '/articles/index',
+            ]
+        ]);
+        $this->session([
+            'Auth' => [
+                'User' => [
+                    'id' => 2,
+                    'username' => 'testing',
+                ]
+            ]
+        ]);
+        $this->enableRetainFlashMessages();
+        $this->get('/favorites/favorites/delete/abce34eb-084b-4ff8-b8b9-754c581ecab2');
+        $this->assertRedirect('/articles/index');
+        $this->assertSession('Unable to delete favorite, please try again', 'Flash.flash.0.message');
+    }
+    
+    /**
+     * Test delete method, record does not exists
+     *
+     * @return void
+     */
+    public function testDeleteOtherUsers()
+    {
+        $this->disableErrorHandlerMiddleware();
+        $this->configRequest([
+            'headers' => [
+                'REFERER' => '/articles/index',
+            ]
+        ]);
+        $this->session([
+            'Auth' => [
+                'User' => [
+                    'id' => 1,
+                    'username' => 'testing',
+                ]
+            ]
+        ]);
+        $this->enableRetainFlashMessages();
+        $this->get('/favorites/favorites/delete/a62e34eb-084b-4ff8-b8b9-754c581ecab2');
+        $this->assertRedirect('/articles/index');
+        $this->assertSession('Unable to delete favorite, please try again', 'Flash.flash.0.message');
     }
 
     /**

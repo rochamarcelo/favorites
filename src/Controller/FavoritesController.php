@@ -118,17 +118,18 @@ class FavoritesController extends AppController
 	 */
 	public function delete($id = null) 
 	{
-		$status = 'error';
-		if (($message = $this->_isOwner($id)) !== true) {
-			// Message defined
-		} elseif ($this->Favorite->deleteRecord($id)) {
-			$status = 'success';
+		$favorite = $this->Favorites->find()->where([
+			'id' => $id,
+			'user_id' => $this->Auth->user('id')
+		])->first();
+		$message = __d('favorites', 'Unable to delete favorite, please try again');
+		if ($favorite && $this->Favorites->delete($favorite)) {
 			$message = __d('favorites', 'Record removed from list');
+			$this->Flash->success($message);
 		} else {
-			$message = __d('favorites', 'Unable to delete favorite, please try again');
+			$this->Flash->error($message);
 		}
 
-		$this->set(compact('status', 'message'));
 		return $this->redirect($this->referer(), -999);
 	}
 
@@ -226,20 +227,25 @@ class FavoritesController extends AppController
 		return parent::redirect($url, $code);
 	}
 
-/**
- * Checks that the favorite exists and that it belongs to the current user.
- *
- * @param mixed $id Id of Favorite to check up on.
- * @return boolean true if the current user owns this favorite.
- */
-	protected function _isOwner($id) {
-		$this->Favorite->id = $id;
-		$favorite = $this->Favorite->read();
-		$this->Favorite->model = $favorite['Favorite']['model'];
+	/**
+	 * Checks that the favorite exists and that it belongs to the current user.
+	 *
+	 * @param mixed $id Id of Favorite to check up on.
+	 * @return boolean true if the current user owns this favorite.
+	 */
+	protected function _isOwner($id) 
+	{
+		//@todo should migrate to custom finder
+		$favorite = $this->Favorites->find()->where([
+			'id' => $id
+		])->first();
+
 		if (empty($favorite)) {
 			return __d('favorites', 'That record does not exist.');
 		}
-		if ($favorite['Favorite']['user_id'] != $this->Auth->user('id')) {
+		$this->model = $favorite->model;
+
+		if ($favorite->user_id != $this->Auth->user('id')) {
 			return __d('favorites', 'That record does not belong to you.');
 		}
 		return true;
