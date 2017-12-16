@@ -7,7 +7,8 @@
  *
  * @copyright Copyright 2009-2010, Cake Development Corporation (http://cakedc.com)
  * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
- */namespace CakeDC\Favorites\Model;
+ */
+namespace CakeDC\Favorites\Model;
 
 use App\Model\AppModel;
 use Cake\Core\Configure;
@@ -55,82 +56,7 @@ class Favorite extends AppModel {
 		}
 	}
 
-/**
- * Get favorite list for a logged in user.
- *
- * @param mixed $userId Id of the user you want to make lists for.
- * @param int $limit Number of list items to get in each category (defaults to 100).
- * @return void
- */
-	public function getFavoriteLists($type, $userId, $limit = 100) {
-		$listItems = $this->getFavorites($userId, array('type' => $type));
-		$list = array();
-		$categoryCounts = array();
-		foreach ($listItems as $item) {
-			$category = $item[$this->alias]['model'];
-			if (!isset($list[$category])) {
-				$list[$category] = array();
-				$categoryCounts[$category] = 0;
-			}
-			if (!isset($this->{$category})) {
-				continue;
-			}
-			if ($categoryCounts[$category] >= $limit) {
-				continue;
-			}
-			$method = '__get' . $category . 'Item';
-			if (method_exists($this, $method)) {
-				$list[$category][] = $this->{$method}($item[$category]);
-			} else {
-				$idField = $this->{$category}->primaryKey;
-				$titleField = $this->{$category}->displayField;
-				$list[$category][] = array('id' => $item[$category][$idField], 'title' => $item[$category][$titleField]);
-			}
-			$categoryCounts[$category]++;
-		}
-		return $list;
-	}
 
-/**
- * Helper method for getByType and getFavoriteLists
- *
- * @return array
- */
-	public function getFavorites($userId, $options) {
-		$favorites = $this->find('all', array(
-			'conditions' => array(
-				$this->alias . '.user_id' => $userId,
-				$this->alias . '.type' => $options['type'],
-				$this->alias . '.model' => $this->_getSupported('types', $options)
-			),
-			'order' => $this->alias . '.position ASC',
-			'contain' => $this->_getSupported('contain', $options)
-		));
-		return $favorites;
-	}
-
-/**
- * Returns all the favorites a given User has added
- *
- * @param string $id User id
- * @param array $options query options to be passed to the find method
- * @return array Favorite list with the favorites keys
- * Each key will have a value like the following:
- * array(
- * 'favorite-id1' => 'foreign-key1',
- * 'favorite-id2' => 'foreign-key2')
- * @access public
- */
-	public function getAllFavorites($id = null, $options = array()) {
-		$keys = array_keys(Configure::read('Favorites.types'));
-		$result = array_fill_keys($keys, array());
-		if (!is_null($id)) {
-			$list = $this->getFavorites($id, array('type' => $keys) + $options);
-			$list = Set::combine($list, '{n}.Favorite.id', '{n}.Favorite.foreign_key', '{n}.Favorite.type');
-			$result = array_merge($result, $list);
-		}
-		return $result;
-	}
 
 
 /**
@@ -195,142 +121,6 @@ class Favorite extends AppModel {
 		} else {
 			return $this->find('count', array_merge($parameters, $extra));
 		}
-	}
-
-/**
- * Get all the favorites for a user by type
- * Works similar to getFavoriteLists() but returns full associated model,
- * Making display more flexible.
- *
- * @param mixed $userId Id of user
- * @param array $options Options to use for getting favorites
- * @return array Array of favorites for the user keyed by type.
- */
-	public function getByType($userId, $options = array()) {
-		$_defaults = array('limit' => 16, 'type' => 'default');
-		$options = array_merge($_defaults, $options);
-		$limit = $options['limit'];
-
-		$favorites = $this->getFavorites($userId, $options);
-		$out = $categoryCounts = array();
-		foreach ($favorites as $item) {
-			$category = $item[$this->alias]['model'];
-			if (!isset($out[$category])) {
-				$out[$category] = array();
-				$categoryCounts[$category] = 0;
-			}
-			if ($categoryCounts[$category] >= $limit) {
-				continue;
-			}
-			$out[$category][] = $item;
-			$categoryCounts[$category]++;
-		}
-		return $out;
-	}
-
-/**
- * Get The total number of favorites per category for a User.
- *
- * @param uuid $userId of User
- * @param array $options Options to use for the method.
- * @return array Array of counts keyed by model type
- * @todo add types suport here
- */
-	public function typeCounts($userId, $options = array()) {
-		$options['types'] = $this->_getSupported('types', $options);
-		$counts = $this->find('all', array(
-			'conditions' => array(
-				$this->alias . '.model' => $options['types'],
-				$this->alias . '.user_id' => $userId,
-			),
-			'fields' => array('COUNT(*) AS count', $this->alias . '.model'),
-			'group' => array($this->alias . '.model'),
-			'recursive' => -1
-		));
-
-		$out = array_combine($options['types'], array_fill(0, count($options['types']), 0));
-		foreach ($counts as $count) {
-			$type = $count[$this->alias]['model'];
-			$number = $count[0]['count'];
-			$out[$type] = $number;
-		}
-		return $out;
-	}
-
-/**
- * Move a favorite in the direction indicated. Will update the position record for all other favorites
- *
- * @param mixed $id Id of favorite to move.
- * @param string $direction Direction to move 'up' or 'down'.
- * @return boolean Success
- */
-	public function move($id, $direction = 'up') {
-		$this->recursive = -1;
-		$subject = $this->read(null, $id);
-		if ($direction == 'up') {
-			$modifier = '+1';
-			$targetValue = $subject[$this->alias]['position'] - 1;
-			$subject[$this->alias]['position'] -= 1;
-		} elseif ($direction == 'down') {
-			$modifier = '-1';
-			$targetValue = $subject[$this->alias]['position'] + 1;
-			$subject[$this->alias]['position'] += 1;
-		}
-		if (($subject[$this->alias]['position']) < 0) {
-			$subject[$this->alias]['position'] = 0;
-		}
-		$this->updateAll(
-			array($this->alias . '.position' => $this->alias . ".position {$modifier}",),
-			array(
-				$this->alias . '.position =' => $targetValue,
-				$this->alias . '.user_id' => $subject[$this->alias]['user_id'],
-				$this->alias . '.model' => $subject[$this->alias]['model']
-			)
-		);
-		return $this->save($subject);
-	}
-
-/**
- * Check if the current item in on favorites
- *
- * @param $modelName Name of model that $foreignKey belongs to.
- * @param string $type favorite type
- * @param $foreignKey Id of the record to check.
- * @param $userId Id of the user you are looking.
- * @return boolean
- */
-	public function isFavorited($modelName, $type, $foreignKey, $userId) {
-		$result = $this->getFavoriteId($modelName, $type, $foreignKey, $userId);
-		return ($result !== false);
-	}
-
-/**
- * Get the id of the object matching the current item in favorites.
- *
- * @param $modelName Name of model that $foreignKey belongs to.
- * @param string $type favorite type
- * @param $foreignKey Id of the record to check.
- * @param $userId Id of the user you are looking.
- * @return mixed The id if the element was favorited, false otherwise
- */
-	public function getFavoriteId($modelName, $type, $foreignKey, $userId) {
-		$favoriteId = false;
-
-		$record = $this->find('first', array(
-			'fields' => array($this->alias . '.' . $this->primaryKey),
-			'conditions' => array(
-				$this->alias . '.model' => $modelName,
-				$this->alias . '.foreign_key' => $foreignKey,
-				$this->alias . '.user_id' => $userId,
-				$this->alias . '.type' => $type
-			),
-			'recursive' => -1
-		));
-		if (isset($record[$this->alias][$this->primaryKey])) {
-			$favoriteId = $record[$this->alias][$this->primaryKey];
-		}
-
-		return $favoriteId;
 	}
 
 /**

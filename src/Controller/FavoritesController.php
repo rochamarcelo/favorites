@@ -1,51 +1,55 @@
 <?php
-/**
- * Copyright 2009-2010, Cake Development Corporation (http://cakedc.com)
- *
- * Licensed under The MIT License
- * Redistributions of files must retain the above copyright notice.
- *
- * @copyright Copyright 2009-2010, Cake Development Corporation (http://cakedc.com)
- * @license MIT License (http://www.opensource.org/licenses/mit-license.php)
- */
+
 namespace CakeDC\Favorites\Controller;
 
 use App\Controller\AppController;
 use Cake\Core\Configure;
+use Cake\ORM\TableRegistry;
+use Cake\Event\Event;
 use Cake\Utility\Inflector;
-
-
+use CakeDC\Favorites\Test\App\Model\Table\FavoriteArticlesTable;
+use CakeDC\Favorites\Test\App\Model\Table\FavoriteUsersTable;
 
 /**
  * Favorites Controller
- *
- * @package favorites
- * @subpackage favorites.controllers
  */
-class FavoritesController extends AppController {
+class FavoritesController extends AppController 
+{
 
-/**
- * Models to load
- *
- * @var array
- */
+	/**
+	 * Models to load
+	 *
+	 * @var array
+	 */
 	public $uses = array('Favorites.Favorite');
 
-/**
- * Allowed Types of things to be favorited
- * Maps types to models so you don't have to expose model names if you don't want to.
- *
- * @var array
- */
+	/**
+	 * Allowed Types of things to be favorited
+	 * Maps types to models so you don't have to expose model names if you don't want to.
+	 *
+	 * @var array
+	 */
 	public $favoriteTypes = array();
+	
+	/**
+	 * @var string 
+	 */
+	public $model;
 
-/**
- * beforeFilter callback
- *
- * @return void
- */
-	public function beforeFilter() {
-		parent::beforeFilter();
+
+	/**
+     * Called before the controller action.
+     * We use it to:
+     *  Deny access to all actions.
+     *  Define the property favoriteTypes based on config 'Favorites.types
+     *
+     * @param \Cake\Event\Event $event An Event instance
+     * @return \Cake\Http\Response|null
+     * @link https://book.cakephp.org/3.0/en/controllers.html#request-life-cycle-callbacks
+     */
+    public function beforeFilter(Event $event)
+    {
+		parent::beforeFilter($event);
 		$this->Auth->deny($this->Auth->allowedActions);
 		$types = Configure::read('Favorites.types');
 		if (!empty($types)) {
@@ -60,43 +64,46 @@ class FavoritesController extends AppController {
 			}
 		}
 		$this->set('authMessage', __d('favorites', 'Authentification required'));
+		$config = TableRegistry::exists('FavoriteArticles') ? [] : ['className' => FavoriteArticlesTable::class];
+        TableRegistry::get('FavoriteArticles', $config);
+        
+        $config = TableRegistry::exists('FavoriteUsers') ? [] : ['className' => FavoriteUsersTable::class];
+        TableRegistry::get('FavoriteUsers', $config);
 	}
 
-/**
- * Create a new favorite for the specific type.
- *
- * @param string $type
- * @param string $foreignKey
- * @return void
- */
-	public function add($type = null, $foreignKey = null) {
+	/**
+	 * Create a new favorite for the specific type.
+	 *
+	 * @param string $type
+	 * @param string $foreignKey
+	 * @return void
+	 */
+	public function add($type = null, $foreignKey = null) 
+	{
 		$status = 'error';
 		if (!isset($this->favoriteTypes[$type])) {
 			$message = __d('favorites', 'Invalid object type.');
 		} else {
-			$Subject = ClassRegistry::init($this->favoriteTypes[$type]);
-			$Subject->id = $foreignKey;
-			//$this->Favorite->model = $this->favoriteTypes[$type];
-			$this->Favorite->model = $type;
-			if (!$Subject->exists()) {
+			$Subject = $this->loadModel($this->favoriteTypes[$type]);
+			$this->model = $type;
+			if (!$Subject->exists(['id' => $foreignKey])) {
 				$message = __d('favorites', 'Invalid identifier');
 			} else {
 				try {
-//					debug($this->Auth->user('id'));
-					$result = $Subject->saveFavorite($this->Auth->user('id'), $Subject->name, $type, $foreignKey);
+					$result = $Subject->saveFavorite($this->Auth->user('id'), $Subject->getAlias(), $type, $foreignKey);
 					if ($result) {
 						$status = 'success';
 						$message = __d('favorites', 'Record was successfully added');
 					} else {
 						$message = __d('favorites', 'Record was not added.');
 					}
-				} catch (Exception $e) {
+				} catch (\Exception $e) {
 					$message = __d('favorites', 'Record was not added.') . ' ' . $e->getMessage();
 				}
 			}
 		}
 		$this->set(compact('status', 'message', 'type', 'foreignKey'));
-		if (!empty($this->request->params['isJson'])) {
+		if ($this->request->is('json')) {
 			return $this->render();
 		} else {
 			return $this->redirect($this->referer());
@@ -185,35 +192,37 @@ class FavoritesController extends AppController {
 		return $this->redirect($this->referer());
 	}
 
-/**
- * Overload Redirect.  Many actions are invoked via Xhr, most of these
- * require a list of current favorites to be returned.
- *
- * @param string $url
- * @param unknown $code
- * @param boolean $exit
- * @return void
- */
-	public function redirect($url, $code = null, $exit = true) {
+	/**
+	 * Overload Redirect.  Many actions are invoked via Xhr, most of these
+	 * require a list of current favorites to be returned.
+	 *
+	 * @param string|array $url A string or array-based URL pointing to another location within the app,
+     *     or an absolute URL
+     * @param int $status HTTP status code (eg: 301)
+     * @return \Cake\Http\Response|null
+	 */
+	public function redirect($url, $code = null) 
+	{
 		if ($code == -999) {
-			parent::redirect($url, null, $exit);
+			return parent::redirect($url, null);
 		}
-		if (!empty($this->viewVars['authMessage']) && !empty($this->request->params['isJson'])) {
+
+		if (!empty($this->viewVars['authMessage']) && $this->request->is('json')) {
 			$this->RequestHandler->renderAs($this, 'json');
 			$this->set('message', $this->viewVars['authMessage']);
 			$this->set('status', 'error');
-			echo $this->render('add');
-			$this->_stop();
+			return $this->render('add');
 		}
-		if (!empty($this->request->params['isAjax']) || !empty($this->request->params['isJson'])) {
-			return $this->setAction('short_list', $this->Favorite->model);
+		
+		if ($this->request->is('ajax') || $this->request->is('json')) {
+			return $this->short_list($this->model);
 		} elseif (isset($this->viewVars['status']) && isset($this->viewVars['message'])) {
-			$this->Session->setFlash($this->viewVars['message'], 'default', array(), $this->viewVars['status']);
+			$this->Flash->error($this->viewVars['message'], 'default', array(), $this->viewVars['status']);
 		} elseif (!empty($this->viewVars['authMessage'])) {
-			$this->Session->setFlash($this->viewVars['authMessage']);
+			$this->Flash->error($this->viewVars['authMessage']);
 		}
 
-		parent::redirect($url, $code, $exit);
+		return parent::redirect($url, $code);
 	}
 
 /**

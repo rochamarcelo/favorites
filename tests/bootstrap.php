@@ -78,12 +78,12 @@ Configure::write('Session', [
     'defaults' => 'php'
 ]);
 
-Plugin::load('CakeDC/Favorites', ['path' => ROOT . DS, 'autoload' => true, 'bootstrap' => true]);
+Plugin::load('CakeDC/Favorites', ['path' => ROOT . DS, 'autoload' => true, 'bootstrap' => false]);
 
 DispatcherFactory::add('Routing');
 DispatcherFactory::add('ControllerFactory');
 
-class_alias('CakeDC\Forum\Test\App\Controller\AppController', 'App\Controller\AppController');
+class_alias('CakeDC\Favorites\Test\App\Controller\AppController', 'App\Controller\AppController');
 
 // Ensure default test connection is defined
 if (!getenv('db_dsn')) {
