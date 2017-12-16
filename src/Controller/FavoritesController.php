@@ -133,38 +133,40 @@ class FavoritesController extends AppController
 		return $this->redirect($this->referer(), -999);
 	}
 
-/**
- * Get a list of favorites for a User by type.
- *
- * @param string $type
- * @return void
- */
-	public function short_list($type = null) {
+	/**
+	 * Get a list of favorites for a User by type.
+	 *
+	 * @param string $type
+	 * @return void
+	 */
+	public function shortList($type = null) 
+	{
 		$type = Inflector::underscore($type);
 		if (!isset($this->favoriteTypes[$type])) {
 			$this->Flash->error(__d('favorites', 'Invalid object type.'));
 			return;
 		}
 		$userId = $this->Auth->user('id');
-		$favorites = $this->Favorite->getByType($userId);
+		$favorites = $this->Favorites->getByType($userId, compact('type'));
 		$this->set(compact('favorites', 'type'));
 		$this->render('list');
 	}
 
-/**
- * Get all favorites for a specific user and $type
- *
- * @param string $type Type of favorites to get
- * @return void
- */
-	public function list_all($type = null) {
+	/**
+	 * Get all favorites for a specific user and $type
+	 *
+	 * @param string $type Type of favorites to get
+	 * @return void
+	 */
+	public function listAll($type = null) 
+	{
 		$type = strtolower($type);
 		if (!isset($this->favoriteTypes[$type])) {
-			$this->Session->setFlash(__d('favorites', 'Invalid object type.'));
+			$this->Flash->error(__d('favorites', 'Invalid object type.'));
 			return;
 		}
 		$userId = $this->Auth->user('id');
-		$favorites = $this->Favorite->getByType($userId, array('limit' => 100, 'type' => $type));
+		$favorites = $this->Favorites->getByType($userId, array('limit' => 100, 'type' => $type));
 		$this->set(compact('favorites', 'type'));
 		$this->render('list');
 	}

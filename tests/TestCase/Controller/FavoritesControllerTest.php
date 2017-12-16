@@ -292,7 +292,19 @@ class FavoritesControllerTest extends IntegrationTestCase
      */
     public function testShortList()
     {
-        $this->markTestIncomplete('Not implemented yet.');
+        $this->disableErrorHandlerMiddleware();
+        $this->session([
+            'Auth' => [
+                'User' => [
+                    'id' => 2,
+                    'username' => 'testing',
+                ]
+            ]
+        ]);
+        $this->get('/favorites/favorites/short-list/like');
+        $this->assertResponseOk();
+        $entities = $this->viewVariable('favorites');
+        $this->assertTrue(count($entities['FavoriteArticles']) === 2);
     }
 
     /**
@@ -302,7 +314,19 @@ class FavoritesControllerTest extends IntegrationTestCase
      */
     public function testListAll()
     {
-        $this->markTestIncomplete('Not implemented yet.');
+        $this->disableErrorHandlerMiddleware();
+        $this->session([
+            'Auth' => [
+                'User' => [
+                    'id' => 2,
+                    'username' => 'testing',
+                ]
+            ]
+        ]);
+        $this->get('/favorites/favorites/list-all/like');
+        $this->assertResponseOk();
+        $entities = $this->viewVariable('favorites');
+        $this->assertTrue(count($entities['FavoriteArticles']) === 2);
     }
 
     /**
