@@ -44,10 +44,10 @@ class FavoritesFixture extends TestFixture
     public $records = [
         [
             'id' => 'a62e34eb-084b-4ff8-b8b9-754c581ecab2',
-            'user_id' => 'Lorem ipsum dolor sit amet',
-            'foreign_key' => 'Lorem ipsum dolor sit amet',
-            'model' => 'Lorem ipsum dolor sit amet',
-            'type' => 'Lorem ipsum dolor sit amet',
+            'user_id' => '2',
+            'foreign_key' => '1',
+            'model' => 'FavoriteArticles',
+            'type' => 'like',
             'position' => 1,
             'created' => '2017-12-02 20:15:03',
             'modified' => '2017-12-02 20:15:03'

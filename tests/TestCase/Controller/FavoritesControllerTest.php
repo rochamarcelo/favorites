@@ -66,6 +66,144 @@ class FavoritesControllerTest extends IntegrationTestCase
         $this->assertSession('Record was successfully added', 'Flash.flash.0.message');
         $this->assertRedirect('/articles/index');
     }
+    
+    /**
+     * Test add method as json
+     *
+     * @return void
+     */
+    public function testAddJson()
+    {
+        $this->disableErrorHandlerMiddleware();
+        $this->configRequest([
+            'headers' => [
+                'Accept' => 'application/json',
+                'REFERER' => '/articles/index',
+            ]
+        ]);
+        $this->session([
+            'Auth' => [
+                'User' => [
+                    'id' => 1,
+                    'username' => 'testing',
+                ]
+            ]
+        ]);
+        $this->get('/favorites/favorites/add/like/2');
+        $this->assertResponseOk();
+        $expected = [
+            'message' => 'Record was successfully added',
+            'status' => 'success',
+            'type' => 'like',
+            'foreignKey' => 2
+        ];
+        $actual = json_decode($this->_response->getBody(), true);
+        $this->assertEquals($expected, $actual);
+    }
+    
+    /**
+     * Test add method as json, accessing twice the same type
+     *
+     * @return void
+     */
+    public function testAddDuplicatedFailJson()
+    {
+        $this->disableErrorHandlerMiddleware();
+        $this->configRequest([
+            'headers' => [
+                'Accept' => 'application/json',
+                'REFERER' => '/articles/index',
+            ]
+        ]);
+        $this->session([
+            'Auth' => [
+                'User' => [
+                    'id' => 2,
+                    'username' => 'testing',
+                ]
+            ]
+        ]);
+        $this->get('/favorites/favorites/add/like/1');
+        $this->assertResponseOk();
+        $expected = [
+            'message' => 'Record was not added. Already added.',
+            'status' => 'error',
+            'type' => 'like',
+            'foreignKey' => 1
+        ];
+        $actual = json_decode($this->_response->getBody(), true);
+        $this->assertEquals($expected, $actual);
+    }
+    
+    /**
+     * Test add method as json, has a registry for user_id, foreign_key and model but different type
+     *
+     * @return void
+     */
+    public function testAddDifferentType()
+    {
+        $this->disableErrorHandlerMiddleware();
+        $this->configRequest([
+            'headers' => [
+                'Accept' => 'application/json',
+                'REFERER' => '/articles/index',
+            ]
+        ]);
+        $this->session([
+            'Auth' => [
+                'User' => [
+                    'id' => 2,
+                    'username' => 'testing',
+                ]
+            ]
+        ]);
+        $this->get('/favorites/favorites/add/dislike/1');
+        $this->assertResponseOk();
+        $expected = [
+            'message' => 'Record was successfully added',
+            'status' => 'success',
+            'type' => 'dislike',
+            'foreignKey' => 1
+        ];
+        $actual = json_decode($this->_response->getBody(), true);
+        $this->assertEquals($expected, $actual);
+    }
+    
+    /**
+     * Test add method as json, using wrong type
+     *
+     * @return void
+     */
+    public function testAddWrongType()
+    {
+        $this->disableErrorHandlerMiddleware();
+        $this->configRequest([
+            'headers' => [
+                'Accept' => 'application/json',
+                'REFERER' => '/articles/index',
+            ]
+        ]);
+        $this->session([
+            'Auth' => [
+                'User' => [
+                    'id' => 2,
+                    'username' => 'testing',
+                ]
+            ]
+        ]);
+        $this->get('/favorites/favorites/add/wrongtype/1');
+        $this->assertResponseOk();
+        $expected = [
+            'message' => 'Invalid object type.',
+            'status' => 'error',
+            'type' => 'wrongtype',
+            'foreignKey' => 1
+        ];
+        $actual = json_decode($this->_response->getBody(), true);
+        $this->assertEquals($expected, $actual);
+    }
+    
+
 
     /**
      * Test delete method

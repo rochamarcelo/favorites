@@ -76,7 +76,7 @@ class FavoritesController extends AppController
 	 *
 	 * @param string $type
 	 * @param string $foreignKey
-	 * @return void
+	 * @return \Cake\Http\Response|null
 	 */
 	public function add($type = null, $foreignKey = null) 
 	{
@@ -110,13 +110,14 @@ class FavoritesController extends AppController
 		}
 	}
 
-/**
- * Delete a favorite by Id
- *
- * @param mixed $id Id of favorite to delete.
- * @return void
- */
-	public function delete($id = null) {
+	/**
+	 * Delete a favorite by Id
+	 *
+	 * @param mixed $id Id of favorite to delete.
+	 * @return void
+	 */
+	public function delete($id = null) 
+	{
 		$status = 'error';
 		if (($message = $this->_isOwner($id)) !== true) {
 			// Message defined
