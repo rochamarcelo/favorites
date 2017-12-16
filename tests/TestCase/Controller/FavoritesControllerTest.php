@@ -380,14 +380,4 @@ class FavoritesControllerTest extends IntegrationTestCase
         $this->assertSession('Invalid direction', 'Flash.flash.0.message');
         $this->assertRedirect('/articles/index');
     }
-
-    /**
-     * Test redirect method
-     *
-     * @return void
-     */
-    public function testRedirect()
-    {
-        $this->markTestIncomplete('Not implemented yet.');
-    }
 }
