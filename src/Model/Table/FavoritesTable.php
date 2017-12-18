@@ -375,4 +375,18 @@ class FavoritesTable extends Table
 		}
 		return $list;
 	}
+	
+	/**
+	 * Set up a query to find only registry associated to the user (user_id)
+	 *
+	 * @param Query $query to be setup
+	 * @param array $options containing 'user_id'
+	 * @return Query
+	 */
+	public function findOwned(Query $query, array $options)
+	{
+		return $query->where([
+			$this->aliasField('user_id') => $options['user_id']
+		]);
+	}
 }

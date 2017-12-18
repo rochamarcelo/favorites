@@ -307,4 +307,35 @@ class FavoritesTableTest extends TestCase
         ];
 		$this->assertEquals($result, $expected);
 	}
+	
+	/**
+	 * Test findOwned method
+	 * 
+	 * @return void
+	 */
+	public function testFindOwned()
+	{
+		$actual = $this->Articles->Favorites->find('owned', [
+			'user_id' => 2
+		])->find('list')->toArray();
+		$expected = [
+			'a62e34eb-084b-4ff8-b8b9-754c581ecab2' => 'a62e34eb-084b-4ff8-b8b9-754c581ecab2',
+			'a63e34eb-084b-4ff8-b8b9-754c581ecab2' => 'a63e34eb-084b-4ff8-b8b9-754c581ecab2'
+		];
+		$this->assertEquals($expected, $actual);
+	}
+	
+	/**
+	 * Test findOwned method, user does not has favorites
+	 * 
+	 * @return void
+	 */
+	public function testFindOwnedEmpty()
+	{
+		$actual = $this->Articles->Favorites->find('owned', [
+			'user_id' => 1
+		])->find('list')->toArray();
+		$expected = [];
+		$this->assertEquals($expected, $actual);
+	}
 }

@@ -202,8 +202,7 @@ class FavoritesControllerTest extends IntegrationTestCase
         $actual = json_decode($this->_response->getBody(), true);
         $this->assertEquals($expected, $actual);
     }
-    
-    
+
     /**
      * Test delete method
      *
@@ -238,7 +237,6 @@ class FavoritesControllerTest extends IntegrationTestCase
      */
     public function testDeleteNotExists()
     {
-        $this->disableErrorHandlerMiddleware();
         $this->configRequest([
             'headers' => [
                 'REFERER' => '/articles/index',
@@ -265,7 +263,6 @@ class FavoritesControllerTest extends IntegrationTestCase
      */
     public function testDeleteOtherUsers()
     {
-        $this->disableErrorHandlerMiddleware();
         $this->configRequest([
             'headers' => [
                 'REFERER' => '/articles/index',

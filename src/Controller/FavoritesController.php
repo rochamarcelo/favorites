@@ -118,10 +118,10 @@ class FavoritesController extends AppController
 	 */
 	public function delete($id = null) 
 	{
-		$favorite = $this->Favorites->find()->where([
-			'id' => $id,
+		$favorite = $this->Favorites->findById($id)->find('owned', [
 			'user_id' => $this->Auth->user('id')
 		])->first();
+
 		$message = __d('favorites', 'Unable to delete favorite, please try again');
 		if ($favorite && $this->Favorites->delete($favorite)) {
 			$message = __d('favorites', 'Record removed from list');
@@ -182,8 +182,12 @@ class FavoritesController extends AppController
 	{
 		$status = 'error';
 		$direction = strtolower($direction);
-		if (($message = $this->_isOwner($id)) !== true) {
-			// Message defined
+		$favorite = $this->Favorites->findById($id)->find('owned', [
+			'user_id' => $this->Auth->user('id')
+		])->first();
+		
+		if (!$favorite) {
+			$message = __d('favorites', 'Record not found.');
 		} elseif ($direction !== 'up' && $direction !== 'down') {
 			$message = __d('favorites', 'Invalid direction');
 		} elseif ($this->Favorites->move($id, $direction)) {
@@ -228,29 +232,5 @@ class FavoritesController extends AppController
 		}
 
 		return parent::redirect($url, $code);
-	}
-
-	/**
-	 * Checks that the favorite exists and that it belongs to the current user.
-	 *
-	 * @param mixed $id Id of Favorite to check up on.
-	 * @return boolean true if the current user owns this favorite.
-	 */
-	protected function _isOwner($id) 
-	{
-		//@todo should migrate to custom finder
-		$favorite = $this->Favorites->find()->where([
-			'id' => $id
-		])->first();
-
-		if (empty($favorite)) {
-			return __d('favorites', 'That record does not exist.');
-		}
-		$this->model = $favorite->model;
-
-		if ($favorite->user_id != $this->Auth->user('id')) {
-			return __d('favorites', 'That record does not belong to you.');
-		}
-		return true;
 	}
 }
