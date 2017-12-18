@@ -164,7 +164,7 @@ class FavoriteBehaviorTest extends TestCase
 		} catch (\Exception $e) {
 			$this->assertEquals($e->getMessage(), 'You cannot add more than 2 items to this list');
 		}
-		$result = $this->FavoriteArticles->saveFavorite(2, 'FavoriteArticles', 'like', 3);
+		$result = $this->FavoriteArticles->saveFavorite(3, 'FavoriteArticles', 'like', 3);
 		$this->assertInstanceOf('\Cake\Datasource\EntityInterface', $result);
 	}
 	
